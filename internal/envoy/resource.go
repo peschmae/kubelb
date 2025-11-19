@@ -201,6 +201,27 @@ func makeCluster(clusterName string, lbEndpoints []*envoyEndpoint.LbEndpoint, pr
 		},
 	}
 
+	defaultCircuitBreakers := &envoyCluster.CircuitBreakers{
+		Thresholds: []*envoyCluster.CircuitBreakers_Thresholds{
+			{
+				Priority:           envoyCore.RoutingPriority_HIGH,
+				MaxConnections:     &wrapperspb.UInt32Value{Value: 100000},
+				MaxPendingRequests: &wrapperspb.UInt32Value{Value: 100000},
+				MaxRequests:        &wrapperspb.UInt32Value{Value: 60000000},
+				MaxRetries:         &wrapperspb.UInt32Value{Value: 3},
+				TrackRemaining:     true,
+			},
+			{
+				Priority:           envoyCore.RoutingPriority_DEFAULT,
+				MaxConnections:     &wrapperspb.UInt32Value{Value: 100000},
+				MaxPendingRequests: &wrapperspb.UInt32Value{Value: 100000},
+				MaxRequests:        &wrapperspb.UInt32Value{Value: 60000000},
+				MaxRetries:         &wrapperspb.UInt32Value{Value: 3},
+				TrackRemaining:     true,
+			},
+		},
+	}
+
 	if protocol == corev1.ProtocolUDP {
 		// UDP health checks are not supported in Envoy, so we set defaultHealthCheck to nil
 		defaultHealthCheck = nil
@@ -219,6 +240,7 @@ func makeCluster(clusterName string, lbEndpoints []*envoyEndpoint.LbEndpoint, pr
 		},
 		DnsLookupFamily: envoyCluster.Cluster_V4_ONLY,
 		HealthChecks:    defaultHealthCheck,
+		CircuitBreakers: defaultCircuitBreakers,
 		CommonLbConfig: &envoyCluster.Cluster_CommonLbConfig{
 			HealthyPanicThreshold: &envoytypev3.Percent{Value: 0},
 		},
